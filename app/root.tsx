@@ -4,10 +4,19 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteLoaderData,
   isRouteErrorResponse,
 } from "react-router";
+import { NonceProvider, useNonce } from "usenonce";
+import {
+  Theme,
+  useTheme,
+  ThemeProvider,
+  PreventFlashOnWrongTheme,
+} from "remix-themes";
 
 import type { Route } from "./+types/root";
+import { themeSessionResolver } from "./sessions.server";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
@@ -23,21 +32,64 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-export function Layout({ children }: { children: React.ReactNode }) {
+// Return the theme from the session storage using the loader
+export const loader = async ({ request }) => {
+  const { getTheme } = await themeSessionResolver(request);
+  return {
+    theme: getTheme(),
+  };
+};
+
+// Use the theme in your app.
+// If the theme is missing in session storage, PreventFlashOnWrongTheme will get
+// the browser theme before hydration and will prevent a flash in browser.
+// The client code runs conditionally, it won't be rendered if we have a theme in session storage.
+function InnerLayout({
+  ssrTheme,
+  children,
+}: {
+  ssrTheme: boolean;
+  children: React.ReactNode;
+}) {
+  const nonce = useNonce();
+  const [theme] = useTheme();
+
   return (
-    <html lang="en">
+    <html lang="en" data-theme={theme} className={theme ?? ""}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body>
+      <body
+        className="bg-white text-black dark:bg-black dark:text-white"
+        suppressHydrationWarning
+      >
         {children}
-        <ScrollRestoration />
-        <Scripts />
+        <ScrollRestoration nonce={nonce} />
+        <PreventFlashOnWrongTheme ssrTheme={ssrTheme} nonce={nonce} />
+        <Scripts nonce={nonce} />
       </body>
     </html>
+  );
+}
+
+// Wrap your app with ThemeProvider.
+// `specifiedTheme` is the stored theme in the session storage.
+// `themeAction` is the action name that's used to change the theme in the session storage.
+export function Layout({ children }: { children: React.ReactNode }) {
+  const data = useRouteLoaderData<typeof loader>("root");
+
+  return (
+    <ThemeProvider
+      specifiedTheme={data?.theme as Theme}
+      themeAction="/resources/set-theme"
+    >
+      <NonceProvider>
+        <InnerLayout ssrTheme={Boolean(data?.theme)}>{children}</InnerLayout>
+      </NonceProvider>
+    </ThemeProvider>
   );
 }
 

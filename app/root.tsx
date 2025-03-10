@@ -7,6 +7,7 @@ import {
   useRouteLoaderData,
   isRouteErrorResponse,
 } from "react-router";
+import type { LoaderArgs } from "@remix-run/node";
 import { NonceProvider, useNonce } from "usenonce";
 import {
   Theme,
@@ -33,7 +34,7 @@ export const links: Route.LinksFunction = () => [
 ];
 
 // Return the theme from the session storage using the loader
-export const loader = async ({ request }) => {
+export const loader = async ({ request }: LoaderArgs) => {
   const { getTheme } = await themeSessionResolver(request);
   return {
     theme: getTheme(),
@@ -62,10 +63,7 @@ function InnerLayout({
         <Meta />
         <Links />
       </head>
-      <body
-        className="bg-white text-black dark:bg-black dark:text-white"
-        suppressHydrationWarning
-      >
+      <body suppressHydrationWarning>
         {children}
         <ScrollRestoration nonce={nonce} />
         <PreventFlashOnWrongTheme ssrTheme={ssrTheme} nonce={nonce} />
@@ -83,8 +81,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeProvider
-      specifiedTheme={data?.theme as Theme}
       themeAction="/resources/set-theme"
+      specifiedTheme={data?.theme as Theme}
     >
       <NonceProvider>
         <InnerLayout ssrTheme={Boolean(data?.theme)}>{children}</InnerLayout>

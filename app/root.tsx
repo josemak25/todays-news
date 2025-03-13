@@ -7,7 +7,6 @@ import {
   useRouteLoaderData,
   isRouteErrorResponse,
 } from "react-router";
-import type { LoaderArgs } from "@remix-run/node";
 import { NonceProvider, useNonce } from "usenonce";
 import {
   Theme,
@@ -17,6 +16,7 @@ import {
 } from "remix-themes";
 
 import type { Route } from "./+types/root";
+import { Toaster } from "~/components/ui/sonner";
 import { themeSessionResolver } from "./sessions.server";
 import "./app.css";
 
@@ -34,11 +34,9 @@ export const links: Route.LinksFunction = () => [
 ];
 
 // Return the theme from the session storage using the loader
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   const { getTheme } = await themeSessionResolver(request);
-  return {
-    theme: getTheme(),
-  };
+  return { theme: getTheme() };
 };
 
 // Use the theme in your app.
@@ -85,7 +83,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       specifiedTheme={data?.theme as Theme}
     >
       <NonceProvider>
-        <InnerLayout ssrTheme={Boolean(data?.theme)}>{children}</InnerLayout>
+        <InnerLayout ssrTheme={Boolean(data?.theme)}>
+          {children}
+          <Toaster />
+        </InnerLayout>
       </NonceProvider>
     </ThemeProvider>
   );

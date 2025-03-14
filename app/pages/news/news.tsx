@@ -1,32 +1,24 @@
-import { Link, useSubmit, useLoaderData, useSearchParams } from "react-router";
+import { Suspense } from "react";
 import omit from "lodash/omit";
-import { Ellipsis, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Link, useSubmit, useLoaderData } from "react-router";
 
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
-import {
-  Card,
-  CardTitle,
-  CardFooter,
-  CardContent,
-  CardHeader,
-  CardDescription,
-} from "~/components/ui/card";
 
 import { NewsSearch } from "./search";
-import { Headlines } from "./headlines";
+import { useArticlesSearchParams } from "~/lib/hooks";
 import { ModeToggle } from "~/components/ui/mode-toggle";
 import { NewsSources } from "~/components/ui/news-sources";
+import { GuardianNews, NewsAPINews, HeadLineNews } from "./loaders";
 
 export function News() {
   const submit = useSubmit();
-  const [params] = useSearchParams();
+  const params = useArticlesSearchParams();
   const data = useLoaderData<ArticleLoaderData>();
-
-  const queryParams: SearchArticle = Object.fromEntries(params.entries());
 
   return (
     <main className="flex flex-col h-screen">
@@ -76,18 +68,18 @@ export function News() {
                     key={category}
                     onClick={() =>
                       submit(
-                        category === queryParams?.category
-                          ? omit(queryParams, ["category"])
-                          : { ...queryParams, category },
+                        category === params?.category
+                          ? omit(params, ["category"])
+                          : { ...params, category },
                         { method: "GET" }
                       )
                     }
                     className={cn(
                       "cursor-pointer capitalize",
-                      category !== queryParams?.category && "text-gray-500"
+                      category !== params?.category && "text-gray-500"
                     )}
                     variant={
-                      category === queryParams?.category ? "default" : "ghost"
+                      category === params?.category ? "default" : "ghost"
                     }
                   >
                     {category}
@@ -107,68 +99,20 @@ export function News() {
       <section className="lg:hidden py-4 ">
         <NewsSources
           applyBottomBorder={false}
-          selected={queryParams?.source}
+          selected={params?.source}
           onSelect={(source) =>
-            submit({ ...queryParams, source }, { method: "GET" })
+            submit({ ...params, source }, { method: "GET" })
           }
         />
       </section>
       {/* END OF MOBILE NEWS SOURCES */}
 
-      {/* START OF MOBILE HEADLINES */}
-      {data.headlines.length > 0 ? (
-        <section className="py-4 block lg:hidden">
-          <h2 className="px-4 text-l font-semibold mb-4">Headlines</h2>
+      {/* START OF HEADLINE*/}
+      <Suspense fallback={<div>Loading headline news...</div>}>
+        <HeadLineNews />
+      </Suspense>
 
-          <ScrollArea
-            aria-orientation="horizontal"
-            className="w-full whitespace-nowrap"
-          >
-            <div className="flex space-x-2 px-4">
-              {data.headlines.map((headline) => (
-                <Link to={headline.url} target="_blank" key={headline.id}>
-                  <Card className=" min-w-[300px] h-[300px] p-0 rounded-2xl overflow-hidden relative">
-                    <CardContent className="h-full p-0">
-                      <img
-                        src={headline.image}
-                        className="w-full h-full object-cover"
-                      />
-                    </CardContent>
-
-                    {/* Gradient overlay */}
-                    <div className="absolute w-full h-full top-0 left-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-
-                    <CardFooter className="flex-col absolute bottom-0 p-4 space-y-5 w-full items-start">
-                      <CardTitle className="text-xl text-white text-wrap  line-clamp-2">
-                        {headline.title}
-                      </CardTitle>
-
-                      <div className="flex items-center space-x-2">
-                        <Avatar className="size-8">
-                          <AvatarImage
-                            className="rounded-full"
-                            src={headline.image}
-                          />
-                        </Avatar>
-                        <CardDescription className="text-sm text-white">
-                          {headline.source} • {headline.publishedAt}
-                        </CardDescription>
-                      </div>
-                    </CardFooter>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-
-            <ScrollBar orientation="horizontal" hidden />
-          </ScrollArea>
-        </section>
-      ) : null}
-      {/* END OF MOBILE HEADLINES*/}
-
-      {/* START OF DESKTOP HEADLINE*/}
-      <Headlines headlines={data.headlines} />
-      {/* END OF DESKTOP HEADLINE*/}
+      {/* END OF  HEADLINE*/}
 
       {/* START OF MOBILE CATEGORIES */}
       <section className="py-2 lg:hidden">
@@ -179,15 +123,15 @@ export function News() {
                 key={category}
                 onClick={() =>
                   submit(
-                    category === queryParams?.category
-                      ? omit(queryParams, ["category"])
-                      : { ...queryParams, category },
+                    category === params?.category
+                      ? omit(params, ["category"])
+                      : { ...params, category },
                     { method: "GET" }
                   )
                 }
                 className={cn(
                   "px-4 py-2 rounded-full capitalize",
-                  category !== queryParams?.category &&
+                  category !== params?.category &&
                     "bg-primary/30 text-primary-foreground/80"
                 )}
               >
@@ -201,7 +145,7 @@ export function News() {
       {/* END OF MOBILE CATEGORIES */}
 
       {/* START OF DESKTOP NEWS SOURCES*/}
-      <section className="hidden lg:flex w-[70%] self-center h-dvh my-10">
+      <section className="hidden lg:flex w-[70%] self-center my-10">
         <ScrollArea
           aria-orientation="horizontal"
           className="w-full whitespace-nowrap"
@@ -213,11 +157,10 @@ export function News() {
                 to={`?source=${source.name}`}
                 className="flex flex-row max-w-[350px] gap-3 text-wrap p-1 border-none shadow-none cursor-pointer"
               >
-                {/* Logo */}
                 <Avatar
                   className={cn(
                     "size-14 bg-transparent flex items-center justify-center p-2",
-                    source.name === queryParams.source && "bg-red-400"
+                    source.name === params.source && "bg-red-400"
                   )}
                 >
                   <AvatarImage className="rounded-full" src={source.image} />
@@ -226,7 +169,6 @@ export function News() {
                   </AvatarFallback>
                 </Avatar>
 
-                {/* Text Content */}
                 <div>
                   <h2 className="text-lg font-semibold line-clamp-3">
                     {source.title}
@@ -244,61 +186,35 @@ export function News() {
       {/* END OF DESKTOP NEWS SOURCES*/}
 
       {/* START OF RECOMMENDED */}
-      {data.articles.length > 0 ? (
-        <section className="w-full lg:w-[70%] lg:self-center p-5">
-          <h2 className="text-l font-semibold mb-4">Recommended</h2>
+      <section className="w-full lg:w-[70%] lg:self-center p-5">
+        <h2 className="text-l font-semibold mb-4">Recommended</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16 flex-wrap">
+          <Suspense fallback={<div>Loading guardian news...</div>}>
+            <GuardianNews />
+          </Suspense>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16 flex-wrap">
-            {data.articles?.map((article) => (
-              <Link to={article.url} target="_blank" key={article.id}>
-                <Card className=" max-w-[375px] h-[150px] p-0 rounded-none flex-row border-0 shadow-none gap-5 border-foreground/5">
-                  <CardHeader className="w-[33%] h-full p-0 rounded-xs overflow-hidden">
-                    <img
-                      className="flex-1 object-cover min-w-[150px]"
-                      src={article.image}
-                    />
-                  </CardHeader>
-
-                  <CardContent className="flex-1 p-0 flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                      <CardDescription className="text-xs font-semibold underline text-foreground">
-                        {article.source}
-                      </CardDescription>
-
-                      <Ellipsis size={20} />
-                    </div>
-
-                    <CardTitle className="text-lg text-foreground text-wrap text-ellipsis line-clamp-3">
-                      {article.description}
-                    </CardTitle>
-
-                    <CardDescription className="text-xs font-semibold text-foreground/40">
-                      {article.tag}• {article.publishedAt}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-
-                <Separator className="my-4 h-[2px] max-w-[375px]  bg-border/70" />
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
+          <Suspense fallback={<div>Loading news api news...</div>}>
+            <NewsAPINews />
+          </Suspense>
+        </div>
+      </section>
       {/* END OF RECOMMENDED */}
 
       {/* START OF PAGINATION */}
-      {data.articles.length > 0 && (
-        <div className="w-full flex py-10 items-center justify-center">
-          <Button
-            className="px-10 cursor-pointer"
-            onClick={() =>
-              submit({ ...queryParams, page: 2 }, { method: "GET" })
-            }
-          >
-            Load More
-          </Button>
-        </div>
-      )}
+      <div className="w-full flex py-10 items-center justify-center">
+        <Button
+          className="px-10 cursor-pointer"
+          onClick={() => {
+            // TODO: Add load more logic to infinite query so we can show or remove the button if hasMore is true|false
+            submit(
+              { ...params, page: Number(params?.page || 1) + 1 },
+              { method: "GET" }
+            );
+          }}
+        >
+          Load More
+        </Button>
+      </div>
       {/* END OF PAGINATION */}
     </main>
   );

@@ -1,5 +1,4 @@
 import Guardian from "guardian-js";
-import { toast } from "sonner";
 import NewsAPI from "~/lib/news-api";
 
 import {
@@ -19,7 +18,10 @@ export const getHeadlines = async () => {
     pageSize: 10,
   });
 
-  return formatNewsArticles(response.articles);
+  return {
+    totalResults: response.totalResults,
+    data: formatNewsArticles(response?.articles || []),
+  };
 };
 
 export const getNewsAPIArticles = async (params: SearchArticle) => {
@@ -38,14 +40,10 @@ export const getNewsAPIArticles = async (params: SearchArticle) => {
 
   const response = await newsAPI.getEverything(query);
 
-  if (response.error) {
-    // TODO: report error to Sentry
-    toast.error(response?.error || "Oops! Something went wrong");
-  }
-
-  // returning an empty array to prevent screen crashes on error
-  // TODO: handle error properly and add error handling to the UI
-  return formatNewsArticles(response?.articles || []);
+  return {
+    totalResults: response.totalResults,
+    data: formatNewsArticles(response?.articles || []),
+  };
 };
 
 export const getGuardianArticles = async (params: SearchArticle) => {
@@ -56,43 +54,10 @@ export const getGuardianArticles = async (params: SearchArticle) => {
     "from-date": params.start_date,
   });
 
-  try {
-    const response = await guardian.content.search(params?.query || "", query);
+  const response = await guardian.content.search(params?.query || "", query);
 
-    return formatGuardianArticles(response.results);
-  } catch (error: any) {
-    // TODO: report error to Sentry
-    toast.error(error.message || "Oops! Something went wrong");
-
-    // returning an empty array to prevent screen crashes on error
-    // TODO: handle error properly and add error handling to the UI
-    return [];
-  }
-};
-
-export const searchArticles = async (query: SearchArticle) => {
-  const newsSource = query.source
-    ?.toUpperCase()
-    .split(" ")
-    .join("_") as NewsSource | null;
-
-  let newsAPIArticles: Article[] = [];
-  let guardianArticles: Article[] = [];
-
-  switch (newsSource) {
-    case "GUARDIAN":
-      guardianArticles = await getGuardianArticles(query);
-      break;
-
-    case "NEWS_API":
-      newsAPIArticles = await getNewsAPIArticles(query);
-      break;
-
-    default:
-      newsAPIArticles = await getNewsAPIArticles(query);
-      guardianArticles = await getGuardianArticles(query);
-      break;
-  }
-
-  return newsAPIArticles.concat(guardianArticles);
+  return {
+    pages: response.pages as number,
+    data: formatGuardianArticles(response.results),
+  };
 };

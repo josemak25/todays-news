@@ -19,7 +19,7 @@ type NewsSourceDetails = {
   description: string;
 };
 
-type ArticleLoaderData = {
+type ArticleLoaderData<T = any> = {
   articles: Article[];
   headlines: Article[];
   categories: string[];

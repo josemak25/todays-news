@@ -141,10 +141,6 @@ export interface INewsApiResponse {
    */
   code?: string;
   /**
-   * Error message
-   */
-  error?: string;
-  /**
    * The total number of results available for your request.
    */
   totalResults: number;
@@ -318,10 +314,6 @@ export interface INewsApiSourcesResponse {
    * Error code
    */
   code?: string;
-  /**
-   * Error message
-   */
-  error?: string;
   /**
    * The results of the request.
    */

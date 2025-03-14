@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Calendar1 } from "lucide-react";
 
-import { Card, CardContent } from "~/components/ui/card";
+import { Avatar, AvatarImage } from "~/components/ui/avatar";
+import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
+import {
+  Card,
+  CardTitle,
+  CardFooter,
+  CardContent,
+  CardDescription,
+} from "~/components/ui/card";
 import {
   Carousel,
   CarouselItem,
@@ -12,7 +20,9 @@ import {
   type CarouselApi,
 } from "~/components/ui/carousel";
 
-export function Headlines({ headlines }: Pick<ArticleLoaderData, "headlines">) {
+export function DesktopHeadlines({
+  headlines,
+}: Pick<ArticleLoaderData, "headlines">) {
   const [current, setCurrent] = useState(0);
   const [api, setApi] = useState<CarouselApi>();
 
@@ -21,9 +31,7 @@ export function Headlines({ headlines }: Pick<ArticleLoaderData, "headlines">) {
       return;
     }
 
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap());
-    });
+    api.on("select", () => setCurrent(api.selectedScrollSnap()));
   }, [api]);
 
   const article = headlines[current];
@@ -38,7 +46,7 @@ export function Headlines({ headlines }: Pick<ArticleLoaderData, "headlines">) {
         <div className="p-10 max-w-2xl">
           <div className="flex items-center space-x-2 text-gray-500 text-sm">
             <Calendar1 className="size-4" />
-            <span> {article.publishedAt} </span>
+            <span> {article.publishedAt}</span>
           </div>
 
           <h1 className="mt-2 text-4xl md:text-6xl font-serif font-bold">
@@ -80,6 +88,59 @@ export function Headlines({ headlines }: Pick<ArticleLoaderData, "headlines">) {
         <CarouselPrevious className="size-15 cursor-pointer" />
         <CarouselNext className="size-15 cursor-pointer" />
       </Carousel>
+    </section>
+  );
+}
+
+export function MobileHeadlines({
+  headlines,
+}: Pick<ArticleLoaderData, "headlines">) {
+  return (
+    <section className="py-4 block lg:hidden">
+      <h2 className="px-4 text-l font-semibold mb-4">Headlines</h2>
+
+      <ScrollArea
+        aria-orientation="horizontal"
+        className="w-full whitespace-nowrap"
+      >
+        <div className="flex space-x-2 px-4">
+          {headlines.map((headline) => (
+            <Link to={headline.url} target="_blank" key={headline.id}>
+              <Card className=" min-w-[300px] h-[300px] p-0 rounded-2xl overflow-hidden relative">
+                <CardContent className="h-full p-0">
+                  <img
+                    src={headline.image}
+                    className="w-full h-full object-cover"
+                  />
+                </CardContent>
+
+                {/* Gradient overlay */}
+                <div className="absolute w-full h-full top-0 left-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+
+                <CardFooter className="flex-col absolute bottom-0 p-4 space-y-5 w-full items-start">
+                  <CardTitle className="text-xl text-white text-wrap  line-clamp-2">
+                    {headline.title}
+                  </CardTitle>
+
+                  <div className="flex items-center space-x-2">
+                    <Avatar className="size-8">
+                      <AvatarImage
+                        className="rounded-full"
+                        src={headline.image}
+                      />
+                    </Avatar>
+                    <CardDescription className="text-sm text-white">
+                      {headline.source} • {headline.publishedAt}
+                    </CardDescription>
+                  </div>
+                </CardFooter>
+              </Card>
+            </Link>
+          ))}
+        </div>
+
+        <ScrollBar orientation="horizontal" hidden />
+      </ScrollArea>
     </section>
   );
 }

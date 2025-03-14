@@ -17,7 +17,10 @@ import {
 
 import type { Route } from "./+types/root";
 import { Toaster } from "~/components/ui/sonner";
+import { queryClient } from "~/lib/query-client";
 import { themeSessionResolver } from "./sessions.server";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
@@ -38,6 +41,21 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const { getTheme } = await themeSessionResolver(request);
   return { theme: getTheme() };
 };
+
+export function HydrateFallback() {
+  return (
+    <main
+      id="loading-splash"
+      className="flex flex-col items-center justify-center w-screen h-screen gap-8"
+    >
+      <span className="relative flex size-10">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+        <span className="relative inline-flex size-10 rounded-full bg-primary"></span>
+      </span>
+      <p className="text-sm">Loading, please wait...</p>
+    </main>
+  );
+}
 
 // Use the theme in your app.
 // If the theme is missing in session storage, PreventFlashOnWrongTheme will get
@@ -82,12 +100,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
       themeAction="/resources/set-theme"
       specifiedTheme={data?.theme as Theme}
     >
-      <NonceProvider>
-        <InnerLayout ssrTheme={Boolean(data?.theme)}>
-          {children}
-          <Toaster />
-        </InnerLayout>
-      </NonceProvider>
+      <QueryClientProvider client={queryClient}>
+        <NonceProvider>
+          <InnerLayout ssrTheme={Boolean(data?.theme)}>
+            {children}
+            <Toaster />
+            <ReactQueryDevtools initialIsOpen={false} />
+          </InnerLayout>
+        </NonceProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }

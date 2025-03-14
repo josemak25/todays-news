@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import omit from "lodash/omit";
+import omit from "lodash.omit";
 import { ArrowRight } from "lucide-react";
 import { Link, useSubmit, useLoaderData } from "react-router";
 

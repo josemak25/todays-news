@@ -20,7 +20,6 @@ import { Toaster } from "~/components/ui/sonner";
 import { queryClient } from "~/lib/query-client";
 import { themeSessionResolver } from "./sessions.server";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
@@ -105,7 +104,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <InnerLayout ssrTheme={Boolean(data?.theme)}>
             {children}
             <Toaster />
-            <ReactQueryDevtools initialIsOpen={false} />
           </InnerLayout>
         </NonceProvider>
       </QueryClientProvider>

@@ -1,8 +1,8 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { format } from "date-fns";
-import omitBy from "lodash/omitBy";
-import isEmpty from "lodash/isEmpty";
+import omitBy from "lodash.omitby";
+import isEmpty from "lodash.isempty";
 
 import type { ApiNewsCategory, INewsApiResponse } from "./news-api/types";
 

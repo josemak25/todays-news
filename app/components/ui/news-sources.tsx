@@ -7,10 +7,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 
 type NewsSourceProps = {
   selected?: string;
+  applyBottomBorder?: boolean;
   onSelect: (select: string) => void;
 };
 
-export const NewsSources = ({ selected, onSelect }: NewsSourceProps) => {
+export const NewsSources = ({
+  selected,
+  onSelect,
+  applyBottomBorder = true,
+}: NewsSourceProps) => {
   const { sources } = useLoaderData<ArticleLoaderData>();
 
   return (
@@ -18,15 +23,17 @@ export const NewsSources = ({ selected, onSelect }: NewsSourceProps) => {
       aria-orientation="horizontal"
       className="w-full whitespace-nowrap"
     >
-      <div className="flex w-max px-4 space-x-4">
+      <div className="flex w-max lg:space-x-2">
         {sources.map((source) => (
           <Button
+            type="button"
             variant="ghost"
             key={source.name}
             onClick={() => onSelect(source.name)}
             className={cn(
               "flex-col h-full cursor-pointer hover:bg-transparent rounded-sm",
-              source.name === selected && "border-b-2"
+              applyBottomBorder && "border-b-2 border-b-transparent",
+              applyBottomBorder && source.name === selected && "border-input"
             )}
           >
             <Avatar

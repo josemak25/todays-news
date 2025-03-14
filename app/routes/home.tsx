@@ -1,6 +1,6 @@
 import type { Route } from "./+types/home";
 import { News } from "~/pages/news/news";
-import { getHeadlines } from "~/lib/api";
+import { getHeadlines, searchArticles } from "~/lib/api";
 import { getArticlesCategories, getNewsSources } from "~/lib/utils";
 
 export function meta({}: Route.MetaArgs) {
@@ -14,23 +14,22 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export async function clientLoader({}: Route.ClientLoaderArgs) {
-  // const articles = await getAllArticles();
-  // const headlines = await getHeadlines();
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  const url = new URL(request.url);
+  const query: SearchArticle = Object.fromEntries(url.searchParams.entries());
+
+  const headlines = await getHeadlines();
+  const articles = await searchArticles(query);
 
   const sources = getNewsSources();
   const categories = getArticlesCategories();
 
   return {
     sources,
+    articles,
+    headlines,
     categories,
-    articles: [],
-    headlines: [],
   };
-}
-
-export async function clientAction({ params }: Route.ClientActionArgs) {
-  console.log(params);
 }
 
 export default function Home() {

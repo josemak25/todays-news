@@ -88,9 +88,13 @@ export default class NewsAPI {
   async _fetchData(url: string, params: URLSearchParams) {
     try {
       const response = await fetch(`${url}?${params.toString()}`);
-      if (!response.ok)
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      return await response.json();
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      return data;
     } catch (error: any) {
       console.error("Error fetching data:", error);
       return { error: error.message };

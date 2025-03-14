@@ -1,6 +1,8 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { format } from "date-fns";
+import omitBy from "lodash/omitBy";
+import isEmpty from "lodash/isEmpty";
 
 import type { ApiNewsCategory, INewsApiResponse } from "./news-api/types";
 
@@ -46,18 +48,51 @@ export const formatNewsDate = (date: string) => {
   return format(new Date(date), "MMM, dd yyyy");
 };
 
+export const cleanQuery = (query: object) => omitBy(query, isEmpty);
+
 export const getNewsSources = () => Object.values(NEWS_SOURCE_DETAILS);
 
-export const formatNewsAPI = (response: INewsApiResponse) => {
-  const formattedArticles: Article[] = response?.articles.map((article) => ({
+/**
+ *
+ * @description A function that helps generate unique id
+ * @function uuidv4
+ * @returns string
+ */
+export const uuidv4 = (): string => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = char === "x" ? random : (random % 4) + 8;
+    return value.toString(16);
+  });
+};
+
+export const formatNewsArticles = (response: INewsApiResponse["articles"]) => {
+  const formattedArticles: Article[] = response.map((article) => ({
+    id: uuidv4(), // API does not provide an id, so we generate one
     url: article.url,
-    source: "NEWS_API",
     title: article.title,
     author: article.author,
     tag: article.source.name,
     description: article.description,
+    source: NEWS_SOURCE_DETAILS["NEWS_API"].name,
     publishedAt: formatNewsDate(article.publishedAt),
     image: article.urlToImage || NEWS_SOURCE_DETAILS["NEWS_API"].image,
+  }));
+
+  return formattedArticles;
+};
+
+export const formatGuardianArticles = (response: any[]) => {
+  const formattedArticles: Article[] = response.map((article) => ({
+    id: article.id,
+    source: "GUARDIAN",
+    url: article.webUrl,
+    author: article.byline,
+    title: article.webTitle,
+    tag: article.sectionName,
+    description: article.webTitle,
+    image: article.image || NEWS_SOURCE_DETAILS["GUARDIAN"].image,
+    publishedAt: format(new Date(article.webPublicationDate), "MMM, dd yyyy"),
   }));
 
   return formattedArticles;

@@ -1,12 +1,16 @@
 import Guardian from "guardian-js";
-import { format } from "date-fns";
+import { toast } from "sonner";
 import NewsAPI from "~/lib/news-api";
 
-import { formatNewsAPI, NEWS_SOURCE_DETAILS } from "./utils";
+import {
+  cleanQuery,
+  formatNewsArticles,
+  formatGuardianArticles,
+} from "./utils";
 
 const newsAPI = new NewsAPI(import.meta.env.VITE_NEWS_API_KEY);
 const guardian = new Guardian(import.meta.env.VITE_GUARDIAN_API_KEY, false);
-// last api package
+//TODO: Add 3RD API (NewsAPI)
 
 export const getHeadlines = async () => {
   const response = await newsAPI.getTopHeadlines({
@@ -15,48 +19,80 @@ export const getHeadlines = async () => {
     pageSize: 10,
   });
 
-  return formatNewsAPI(response);
+  return formatNewsArticles(response.articles);
 };
 
-export const getNewsAPIArticles = async (page: number) => {
-  const response = await newsAPI.getEverything({
-    page,
+export const getNewsAPIArticles = async (params: SearchArticle) => {
+  // remove empty values
+  const query = cleanQuery({
     pageSize: 10,
     language: "en",
+    to: params.end_date,
     sortBy: "relevancy",
-    // sources: ["bbc-news", "google-news", "al-jazeera-english"],
+    q: params.query || "",
+    page: params?.page || 1,
+    from: params.start_date,
+    category: params.category,
+    sources: ["bbc-news", "google-news", "al-jazeera-english"],
   });
 
-  return formatNewsAPI(response);
+  const response = await newsAPI.getEverything(query);
+
+  if (response.error) {
+    // TODO: report error to Sentry
+    toast.error(response?.error || "Oops! Something went wrong");
+  }
+
+  // returning an empty array to prevent screen crashes on error
+  // TODO: handle error properly and add error handling to the UI
+  return formatNewsArticles(response?.articles || []);
 };
 
-export const getGuardianArticles = async (page: number) => {
-  const response = await guardian.content.search("", { page });
-  const formattedArticles: Article[] = response.results.map((article: any) => ({
-    source: "GUARDIAN",
-    url: article.webUrl,
-    author: article.byline,
-    title: article.webTitle,
-    tag: article.sectionName,
-    description: article.webTitle,
-    image: article.image || NEWS_SOURCE_DETAILS["GUARDIAN"].image,
-    publishedAt: format(new Date(article.webPublicationDate), "MMM, dd yyyy"),
-  }));
+export const getGuardianArticles = async (params: SearchArticle) => {
+  // remove empty values
+  const query = cleanQuery({
+    tag: params.category,
+    page: params.page || 1,
+    "from-date": params.start_date,
+  });
 
-  return formattedArticles;
+  try {
+    const response = await guardian.content.search(params?.query || "", query);
+
+    return formatGuardianArticles(response.results);
+  } catch (error: any) {
+    // TODO: report error to Sentry
+    toast.error(error.message || "Oops! Something went wrong");
+
+    // returning an empty array to prevent screen crashes on error
+    // TODO: handle error properly and add error handling to the UI
+    return [];
+  }
 };
 
-export const getAllArticles = async (page = 1) => {
-  const newsAPIArticles = await getNewsAPIArticles(page);
-  const guardianArticles = await getGuardianArticles(page);
+export const searchArticles = async (query: SearchArticle) => {
+  const newsSource = query.source
+    ?.toUpperCase()
+    .split(" ")
+    .join("_") as NewsSource | null;
+
+  let newsAPIArticles: Article[] = [];
+  let guardianArticles: Article[] = [];
+
+  switch (newsSource) {
+    case "GUARDIAN":
+      guardianArticles = await getGuardianArticles(query);
+      break;
+
+    case "NEWS_API":
+      newsAPIArticles = await getNewsAPIArticles(query);
+      break;
+
+    default:
+      newsAPIArticles = await getNewsAPIArticles(query);
+      guardianArticles = await getGuardianArticles(query);
+      break;
+  }
+
   return newsAPIArticles.concat(guardianArticles);
-};
-
-export const searchArticles = async () => {
-  // Make a request to the NewsAPI API
-  // Make a request to the Guardian API
-};
-
-export const fetchNextPage = async (page = 1) => {
-  getAllArticles(page);
 };

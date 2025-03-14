@@ -1,16 +1,17 @@
 import { z } from "zod";
 import { toast } from "sonner";
+import { useState } from "react";
 import { format } from "date-fns";
-import { useForm } from "react-hook-form";
-import { useLoaderData } from "react-router";
 import { CalendarIcon, Search } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSubmit, useLoaderData } from "react-router";
+import { useForm, type UseControllerReturn } from "react-hook-form";
 
-import { cn } from "~/lib/utils";
+import { cleanQuery, cn } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
 import { Calendar } from "~/components/ui/calendar";
 import { NewsSources } from "~/components/ui/news-sources";
+import { Button, buttonVariants } from "~/components/ui/button";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import {
   Form,
@@ -36,13 +37,19 @@ import {
 
 const FormSchema = z.object({
   query: z.string().optional(),
-  end_date: z.date().optional(),
-  start_date: z.date().optional(),
+  source: z.string().optional(),
+  end_date: z.string().optional(),
   category: z.string().optional(),
-  source: z.enum(["GUARDIAN", "NEWS_API"]).optional(),
+  start_date: z.string().optional(),
 });
 
-const DatePicker = ({ field, label }: any) => (
+const DatePicker = ({
+  field,
+  label,
+}: {
+  label: string;
+  field: UseControllerReturn["field"];
+}) => (
   <FormItem className="flex flex-1 flex-col">
     <FormLabel>{label}</FormLabel>
     <Popover>
@@ -68,7 +75,7 @@ const DatePicker = ({ field, label }: any) => (
         <Calendar
           mode="single"
           selected={field.value}
-          onSelect={field.onChange}
+          onSelect={(date) => field.onChange(format(date!, "yyyy-MM-dd"))}
           disabled={(date) =>
             date > new Date() || date < new Date("1900-01-01")
           }
@@ -81,6 +88,8 @@ const DatePicker = ({ field, label }: any) => (
 );
 
 export function NewsSearch() {
+  const submit = useSubmit();
+  const [open, setOpen] = useState(false);
   const { categories } = useLoaderData<ArticleLoaderData>();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -90,18 +99,30 @@ export function NewsSearch() {
   const selectedSource = form.watch("source");
   const selectedCategory = form.watch("category");
 
-  const onSubmit = (data: z.infer<typeof FormSchema>) => {
-    toast("You submitted the following values:");
+  const onSubmit = async (data: z.infer<typeof FormSchema>) => {
+    toast.promise(submit(cleanQuery(data), { method: "GET", state: data }), {
+      error: (err) => err.message,
+      loading: "Searching for articles...",
+      success: () => {
+        form.reset();
+        setOpen(false);
+        return "Successfully found articles";
+      },
+    });
   };
 
   return (
-    <Sheet>
-      <SheetTrigger>
-        <Button variant="outline" className="rounded-2xl size-10">
-          <Search className="size-5 opacity-50" />
-        </Button>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "rounded-2xl size-10 cursor-pointer"
+        )}
+      >
+        <Search className="size-5 opacity-50" />
       </SheetTrigger>
-      <SheetContent className="w-full lg:min-w-[550px] p-1">
+
+      <SheetContent className="w-full lg:min-w-[550px] p-1 overflow-y-scroll">
         <SheetHeader>
           <SheetTitle className="text-2xl">Search News</SheetTitle>
           <SheetDescription>
@@ -183,12 +204,12 @@ export function NewsSearch() {
               render={({ field }) => (
                 <NewsSources
                   selected={selectedSource}
-                  onSelect={(selected) => field.onChange(selected)}
+                  onSelect={field.onChange}
                 />
               )}
             />
 
-            <Button className="mt-6 w-40 self-end" type="submit">
+            <Button className="mt-6 w-40 self-end cursor-pointer" type="submit">
               Submit
             </Button>
           </form>

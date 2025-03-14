@@ -1,4 +1,5 @@
-import { Link, useFetcher, useLoaderData } from "react-router";
+import { Link, useSubmit, useLoaderData, useSearchParams } from "react-router";
+import omit from "lodash/omit";
 import { Ellipsis, ArrowRight } from "lucide-react";
 
 import { cn } from "~/lib/utils";
@@ -21,8 +22,11 @@ import { ModeToggle } from "~/components/ui/mode-toggle";
 import { NewsSources } from "~/components/ui/news-sources";
 
 export function News() {
-  const fetcher = useFetcher();
+  const submit = useSubmit();
+  const [params] = useSearchParams();
   const data = useLoaderData<ArticleLoaderData>();
+
+  const queryParams: SearchArticle = Object.fromEntries(params.entries());
 
   return (
     <main className="flex flex-col h-screen">
@@ -40,9 +44,7 @@ export function News() {
         {/* START OF DESKTOP HEADER */}
         <div className="hidden min-lg:flex w-full justify-between p-10 xl:px-[15rem]">
           <div className="flex items-center space-x-2">
-            <Button variant="outline" className="rounded-2xl size-10">
-              <ModeToggle />
-            </Button>
+            <ModeToggle />
             <NewsSearch />
           </div>
 
@@ -70,11 +72,23 @@ export function News() {
               <div className="flex w-max px-4 space-x-2">
                 {data.categories.map((category) => (
                   <Button
+                    type="submit"
                     key={category}
-                    variant="ghost"
+                    onClick={() =>
+                      submit(
+                        category === queryParams?.category
+                          ? omit(queryParams, ["category"])
+                          : { ...queryParams, category },
+                        { method: "GET" }
+                      )
+                    }
                     className={cn(
-                      "bg-transparent text-gray-500 cursor-pointer hover:bg-transparent border-none capitalize"
+                      "cursor-pointer capitalize",
+                      category !== queryParams?.category && "text-gray-500"
                     )}
+                    variant={
+                      category === queryParams?.category ? "default" : "ghost"
+                    }
                   >
                     {category}
                   </Button>
@@ -91,57 +105,65 @@ export function News() {
 
       {/* START OF MOBILE NEWS SOURCES */}
       <section className="lg:hidden py-4 ">
-        <NewsSources selected="" onSelect={() => {}} />
+        <NewsSources
+          applyBottomBorder={false}
+          selected={queryParams?.source}
+          onSelect={(source) =>
+            submit({ ...queryParams, source }, { method: "GET" })
+          }
+        />
       </section>
       {/* END OF MOBILE NEWS SOURCES */}
 
       {/* START OF MOBILE HEADLINES */}
-      <section className="py-4 block lg:hidden">
-        <h2 className="px-4 text-l font-semibold mb-4">Headlines</h2>
+      {data.headlines.length > 0 ? (
+        <section className="py-4 block lg:hidden">
+          <h2 className="px-4 text-l font-semibold mb-4">Headlines</h2>
 
-        <ScrollArea
-          aria-orientation="horizontal"
-          className="w-full whitespace-nowrap"
-        >
-          <div className="flex space-x-2 px-4">
-            {data.headlines.map((headline) => (
-              <Link to={headline.url} target="_blank" key={headline.title}>
-                <Card className=" min-w-[300px] h-[300px] p-0 rounded-2xl overflow-hidden relative">
-                  <CardContent className="h-full p-0">
-                    <img
-                      src={headline.image}
-                      className="w-full h-full object-cover"
-                    />
-                  </CardContent>
+          <ScrollArea
+            aria-orientation="horizontal"
+            className="w-full whitespace-nowrap"
+          >
+            <div className="flex space-x-2 px-4">
+              {data.headlines.map((headline) => (
+                <Link to={headline.url} target="_blank" key={headline.id}>
+                  <Card className=" min-w-[300px] h-[300px] p-0 rounded-2xl overflow-hidden relative">
+                    <CardContent className="h-full p-0">
+                      <img
+                        src={headline.image}
+                        className="w-full h-full object-cover"
+                      />
+                    </CardContent>
 
-                  {/* Gradient overlay */}
-                  <div className="absolute w-full h-full top-0 left-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                    {/* Gradient overlay */}
+                    <div className="absolute w-full h-full top-0 left-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-                  <CardFooter className="flex-col absolute bottom-0 p-4 space-y-5 w-full items-start">
-                    <CardTitle className="text-xl text-white text-wrap  line-clamp-2">
-                      {headline.title}
-                    </CardTitle>
+                    <CardFooter className="flex-col absolute bottom-0 p-4 space-y-5 w-full items-start">
+                      <CardTitle className="text-xl text-white text-wrap  line-clamp-2">
+                        {headline.title}
+                      </CardTitle>
 
-                    <div className="flex items-center space-x-2">
-                      <Avatar className="size-8">
-                        <AvatarImage
-                          className="rounded-full"
-                          src={headline.image}
-                        />
-                      </Avatar>
-                      <CardDescription className="text-sm text-white">
-                        {headline.source} • {headline.publishedAt}
-                      </CardDescription>
-                    </div>
-                  </CardFooter>
-                </Card>
-              </Link>
-            ))}
-          </div>
+                      <div className="flex items-center space-x-2">
+                        <Avatar className="size-8">
+                          <AvatarImage
+                            className="rounded-full"
+                            src={headline.image}
+                          />
+                        </Avatar>
+                        <CardDescription className="text-sm text-white">
+                          {headline.source} • {headline.publishedAt}
+                        </CardDescription>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </Link>
+              ))}
+            </div>
 
-          <ScrollBar orientation="horizontal" hidden />
-        </ScrollArea>
-      </section>
+            <ScrollBar orientation="horizontal" hidden />
+          </ScrollArea>
+        </section>
+      ) : null}
       {/* END OF MOBILE HEADLINES*/}
 
       {/* START OF DESKTOP HEADLINE*/}
@@ -155,9 +177,18 @@ export function News() {
             {data.categories.map((category) => (
               <Button
                 key={category}
+                onClick={() =>
+                  submit(
+                    category === queryParams?.category
+                      ? omit(queryParams, ["category"])
+                      : { ...queryParams, category },
+                    { method: "GET" }
+                  )
+                }
                 className={cn(
-                  "px-4 py-2 rounded-full"
-                  // tab !== t ? "bg-primary/30 text-primary-foreground/80" : ""
+                  "px-4 py-2 rounded-full capitalize",
+                  category !== queryParams?.category &&
+                    "bg-primary/30 text-primary-foreground/80"
                 )}
               >
                 {category}
@@ -183,7 +214,12 @@ export function News() {
                 className="flex flex-row max-w-[350px] gap-3 text-wrap p-1 border-none shadow-none cursor-pointer"
               >
                 {/* Logo */}
-                <Avatar className="flex size-14 items-center justify-center p-2">
+                <Avatar
+                  className={cn(
+                    "size-14 bg-transparent flex items-center justify-center p-2",
+                    source.name === queryParams.source && "bg-red-400"
+                  )}
+                >
                   <AvatarImage className="rounded-full" src={source.image} />
                   <AvatarFallback className="text-[12px] uppercase">
                     {source.name.slice(0, 2)}
@@ -208,55 +244,61 @@ export function News() {
       {/* END OF DESKTOP NEWS SOURCES*/}
 
       {/* START OF RECOMMENDED */}
-      <section className="w-full lg:w-[70%] lg:self-center p-5">
-        <h2 className="text-l font-semibold mb-4">Recommended</h2>
+      {data.articles.length > 0 ? (
+        <section className="w-full lg:w-[70%] lg:self-center p-5">
+          <h2 className="text-l font-semibold mb-4">Recommended</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16 flex-wrap">
-          {data.articles?.map((article) => (
-            <Link to={article.url} target="_blank" key={article.title}>
-              <Card className=" max-w-[375px] h-[150px] p-0 rounded-none flex-row border-0 shadow-none gap-5 border-foreground/5">
-                <CardHeader className="w-[33%] h-full p-0 rounded-xs overflow-hidden">
-                  <img
-                    className="flex-1 object-cover min-w-[150px]"
-                    src={article.image}
-                  />
-                </CardHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16 flex-wrap">
+            {data.articles?.map((article) => (
+              <Link to={article.url} target="_blank" key={article.id}>
+                <Card className=" max-w-[375px] h-[150px] p-0 rounded-none flex-row border-0 shadow-none gap-5 border-foreground/5">
+                  <CardHeader className="w-[33%] h-full p-0 rounded-xs overflow-hidden">
+                    <img
+                      className="flex-1 object-cover min-w-[150px]"
+                      src={article.image}
+                    />
+                  </CardHeader>
 
-                <CardContent className="flex-1 p-0 flex flex-col justify-between">
-                  <div className="flex items-center justify-between">
-                    <CardDescription className="text-xs font-semibold underline text-foreground">
-                      {article.source}
+                  <CardContent className="flex-1 p-0 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <CardDescription className="text-xs font-semibold underline text-foreground">
+                        {article.source}
+                      </CardDescription>
+
+                      <Ellipsis size={20} />
+                    </div>
+
+                    <CardTitle className="text-lg text-foreground text-wrap text-ellipsis line-clamp-3">
+                      {article.description}
+                    </CardTitle>
+
+                    <CardDescription className="text-xs font-semibold text-foreground/40">
+                      {article.tag}• {article.publishedAt}
                     </CardDescription>
+                  </CardContent>
+                </Card>
 
-                    <Ellipsis size={20} />
-                  </div>
-
-                  <CardTitle className="text-lg text-foreground text-wrap text-ellipsis line-clamp-3">
-                    {article.description}
-                  </CardTitle>
-
-                  <CardDescription className="text-xs font-semibold text-foreground/40">
-                    {article.tag}• {article.publishedAt}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-
-              <Separator className="my-4 h-[2px] max-w-[375px]  bg-border/70" />
-            </Link>
-          ))}
-        </div>
-      </section>
+                <Separator className="my-4 h-[2px] max-w-[375px]  bg-border/70" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {/* END OF RECOMMENDED */}
 
       {/* START OF PAGINATION */}
-      <fetcher.Form
-        method="get"
-        className="w-full flex py-10 items-center justify-center"
-      >
-        <Button className="px-10 cursor-pointer" type="submit">
-          {fetcher.state === "loading" ? "Loading..." : "Load More"}
-        </Button>
-      </fetcher.Form>
+      {data.articles.length > 0 && (
+        <div className="w-full flex py-10 items-center justify-center">
+          <Button
+            className="px-10 cursor-pointer"
+            onClick={() =>
+              submit({ ...queryParams, page: 2 }, { method: "GET" })
+            }
+          >
+            Load More
+          </Button>
+        </div>
+      )}
       {/* END OF PAGINATION */}
     </main>
   );

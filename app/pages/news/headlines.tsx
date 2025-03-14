@@ -58,7 +58,7 @@ export function Headlines({ headlines }: Pick<ArticleLoaderData, "headlines">) {
       <Carousel setApi={setApi} className="w-full xl:max-w-2xl lg:max-w-xs">
         <CarouselContent>
           {headlines.map((headline) => (
-            <CarouselItem key={headline.url}>
+            <CarouselItem key={headline.id}>
               <Link
                 className="p-4"
                 to={headline.url}

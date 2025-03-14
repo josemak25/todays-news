@@ -1,9 +1,10 @@
 type Article = {
+  id: string;
   url: string;
   tag: string;
   title: string;
   image: string;
-  source: NewsSource;
+  source: string;
   publishedAt: string;
   author: string | null;
   description: string | null;
@@ -23,4 +24,13 @@ type ArticleLoaderData = {
   headlines: Article[];
   categories: string[];
   sources: NewsSourceDetails[];
+};
+
+type SearchArticle = {
+  page?: number;
+  query?: string;
+  source?: string;
+  end_date?: string;
+  category?: string;
+  start_date?: string;
 };

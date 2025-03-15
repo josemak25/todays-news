@@ -34,3 +34,8 @@ type SearchArticle = {
   category?: string;
   start_date?: string;
 };
+
+type NewsResults = {
+  data: Article[];
+  totalResults: number;
+};

@@ -74,7 +74,7 @@ export const useSearchGuardianArticlesQuery = () => {
     getNextPageParam: (lastPage, allPages, lastPageParam) => {
       const totalPagesLength = allPages.flatMap((page) => page.data).length;
 
-      if (lastPage.pages > totalPagesLength) {
+      if (lastPage.totalResults > totalPagesLength) {
         return { page: lastPageParam.page + 1 };
       }
     },

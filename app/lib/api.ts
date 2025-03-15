@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import Guardian from "guardian-js";
 import NewsAPI from "~/lib/news-api";
 
@@ -12,19 +13,29 @@ const guardian = new Guardian(import.meta.env.VITE_GUARDIAN_API_KEY, false);
 //TODO: Add 3RD API (NewsAPI)
 
 export const getHeadlines = async () => {
-  const response = await newsAPI.getTopHeadlines({
-    page: 1,
-    country: "us",
-    pageSize: 10,
-  });
+  let result: NewsResults = { data: [], totalResults: 0 };
 
-  return {
-    totalResults: response.totalResults,
-    data: formatNewsArticles(response?.articles || []),
-  };
+  try {
+    const response = await newsAPI.getTopHeadlines({
+      page: 1,
+      country: "us",
+      pageSize: 10,
+    });
+
+    result = {
+      totalResults: response.totalResults,
+      data: formatNewsArticles(response?.articles || []),
+    };
+  } catch (error: any) {
+    toast.error(error.message);
+  }
+
+  return result;
 };
 
 export const getNewsAPIArticles = async (params: SearchArticle) => {
+  let result: NewsResults = { data: [], totalResults: 0 };
+
   // remove empty values
   const query = cleanQuery({
     pageSize: 10,
@@ -38,15 +49,23 @@ export const getNewsAPIArticles = async (params: SearchArticle) => {
     sources: ["bbc-news", "google-news", "al-jazeera-english"],
   });
 
-  const response = await newsAPI.getEverything(query);
+  try {
+    const response = await newsAPI.getEverything(query);
 
-  return {
-    totalResults: response.totalResults,
-    data: formatNewsArticles(response?.articles || []),
-  };
+    result = {
+      totalResults: response.totalResults,
+      data: formatNewsArticles(response?.articles || []),
+    };
+  } catch (error: any) {
+    toast.error(error.message);
+  }
+
+  return result;
 };
 
 export const getGuardianArticles = async (params: SearchArticle) => {
+  let result: NewsResults = { data: [], totalResults: 0 };
+
   // remove empty values
   const query = cleanQuery({
     tag: params.category,
@@ -54,10 +73,16 @@ export const getGuardianArticles = async (params: SearchArticle) => {
     "from-date": params.start_date,
   });
 
-  const response = await guardian.content.search(params?.query || "", query);
+  try {
+    const response = await guardian.content.search(params?.query || "", query);
 
-  return {
-    pages: response.pages as number,
-    data: formatGuardianArticles(response.results),
-  };
+    result = {
+      totalResults: response.pages as number,
+      data: formatGuardianArticles(response.results),
+    };
+  } catch (error: any) {
+    toast.error(error.message);
+  }
+
+  return result;
 };

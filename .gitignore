@@ -5,6 +5,12 @@
 /.react-router/
 /build/
 
+# ignore yarn folder
+.yarn
+.pnp.cjs
+.pnp.loader.mjs
+yarn-error.log
+
 # Ignore all .env files
 .env
 .env.*

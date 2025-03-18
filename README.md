@@ -30,6 +30,14 @@ Install the dependencies:
 yarn install
 ```
 
+### Env
+Create a env.local and add this keys
+
+```env
+VITE_NEWS_API_KEY=038e35511d5747878a2c0137fddcae6b
+VITE_GUARDIAN_API_KEY=e8e0a62b-31c1-4d40-958a-9cc4f3b5b742
+```
+
 ### Development
 
 Start the development server with HMR:
